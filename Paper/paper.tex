@@ -1,0 +1,296 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%% ICML 2014 EXAMPLE LATEX SUBMISSION FILE %%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Use the following line _only_ if you're still using LaTeX 2.09.
+%\documentstyle[icml2014,epsf,natbib]{article}
+% If you rely on Latex2e packages, like most moden people use this:
+\documentclass{article}
+
+% use Times
+\usepackage{times}
+% For figures
+\usepackage{graphicx} % more modern
+%\usepackage{epsfig} % less modern
+\usepackage{subfigure} 
+
+% For citations
+\usepackage{natbib}
+
+% For algorithms
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+% As of 2011, we use the hyperref package to produce hyperlinks in the
+% resulting PDF.  If this breaks your system, please commend out the
+% following usepackage line and replace \usepackage{icml2014} with
+% \usepackage[nohyperref]{icml2014} above.
+\usepackage{hyperref}
+
+% Packages hyperref and algorithmic misbehave sometimes.  We can fix
+% this with the following command.
+\newcommand{\theHalgorithm}{\arabic{algorithm}}
+
+% Employ the following version of the ``usepackage'' statement for
+% submitting the draft version of the paper for review.  This will set
+% the note in the first column to ``Under review.  Do not distribute.''
+\usepackage{icml2014} 
+% Employ this version of the ``usepackage'' statement after the paper has
+% been accepted, when creating the final version.  This will set the
+% note in the first column to ``Proceedings of the...''
+%\usepackage[accepted]{icml2014}
+
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\newcommand{\Xe}{\vec{X}_\mathrm{e}  }
+\newcommand{\XeT}{\vec{X}_\mathrm{e}^\top}
+
+\newcommand{\ye}{\begin{bmatrix} \vec{y}  \\ \vec{y}_\mathrm{u} \end{bmatrix}}
+\newcommand{\G}{\left(\Xe^\top \Xe \right)^{-1}}
+\newcommand{\missidentity}{\begin{bmatrix} 0 & 0 \\ 0 & \textbf{I }\end{bmatrix}}
+\newcommand{\Greg}{\left(\Xe^T \Xe + \lambda \missidentity \right)^{-1}}
+\newcommand{\Cb}{\mathcal{C}_{\beta}}
+\newtheorem{theorem}{Theorem}[section]
+\renewcommand{\vec}[1]{\mathbf{#1}}
+
+% The \icmltitle you define below is probably too long as a header.
+% Therefore, a short form for the running title is supplied here:
+\icmltitlerunning{Projected Estimators for Robust Semi-Supervised Classification}
+
+\begin{document} 
+
+\twocolumn[
+\icmltitle{Projected Estimators for Safe Semi-Supervised Classification}
+
+% It is OKAY to include author information, even for blind
+% submissions: the style file will automatically remove it for you
+% unless you've provided the [accepted] option to the icml2014
+% package.
+\icmlauthor{Jesse H. Krijthe}{jkrijthe@gmail.com}
+\icmladdress{Pattern Recognition Laboratory, Delft University of Technology\\
+Department of Molecular Epidemiology, Leiden University Medical Center}
+\icmlauthor{Marco Loog}{m.loog@tudelft.nl}
+\icmladdress{Pattern Recognition Laboratory, Delft University of Technology\\University of Copenhagen}
+
+% You may provide any keywords that you 
+% find helpful for describing your paper; these are used to populate 
+% the "keywords" metadata in the PDF but will not be shown in the document
+\icmlkeywords{Semi-Supervised Learning, Classification, Least Squares, Projection Estimation}
+
+\vskip 0.3in
+]
+
+\begin{abstract} 
+For semi-supervised techniques to be applied safely in practice we at least want methods to outperform their supervised counterparts. We study classification using the quadratic loss function and consider the question of whether we can construct semi-supervised procedures that strictly outperform the supervised counterpart. Using a projection of the supervised estimate onto a set of constraints imposed by the unlabeled data, we find we can safely improve over the supervised solution in terms of the quadratic loss. It is theoretically  demonstrated that in the transductive setting this semi-supervised procedure never gives a lower quadratic loss than the supervised alternative. Furthermore, the procedure does not rely on additional assumptions apart from the choice of surrogate loss function. In this sense it can be considered a proper semi-supervised counterpart of the least squares classifier. The characteristics of this novel approach are explicated using several simulated and benchmark datasets.
+\end{abstract} 
+
+\section{Introduction}
+\label{Introduction}
+In this work we consider the problem of semi-supervised classification using the quadratic loss function, which is also known as least squares classification or Fisher's linear discriminant classification \cite{Hastie2001,Poggio2003}. We are given an $N_l \times d$ matrix with feature vectors $\vec{X}$, labels $\vec{y} \in \{-1,1\}^{N_l}$ and an $N_u \times d$  matrix with unlabeled objects $\vec{X_u}$ from the same distribution as the labeled objects. The question of semi-supervised learning is how to improve the classification function $f: R^d \to R$ using $\vec{X_u}$ as compared to the case where we do not have these unlabeled objects. In this work, we focus on the linear classifiers with $f(\vec{x})=\vec{w}^T \vec{x}$.
+
+Much work has been done on semi-supervised classification, in particular on the additional assumptions about the unlabeled data, that can help improve the classification. One such assumption that has been successfully applied is that the decision boundary is in regions of low density. If this assumption holds the unlabeled objects can readily be used to improve the decision boundary. The well-known Transductive SVM (TSVM) of \cite{Joachims1999}, as well as entropy regularization \cite{Grandvalet2005} rely on this principle. Another often used assumption is that the data is located on a lower dimensional manifold than the original dimensionality of the sample space. By estimating this manifold using the unlabeled data we can improve the estimate of the classification boundary \cite{Zhu2003,Belkin2006}. Theoretical results have shown that particular classes of problems can be constructed, where manifold regularization can learn problems \cite{Niyogi2013} that cannot be efficiently learned without knowing the manifold. For these classes of problem the objects actually do reside on a lower dimensional manifold and the distance between objects on this manifold is essential for their classification. When a problem does not belong to the such a class, \cite{Lafferty2007} show that manifold regularization does not improve over supervised learning. In these cases, manifold regularization may actually lead to worse performance than the supervised alternative.
+
+These additional assumptions, while successful in some settings, are less successful in others. In effect they can greatly deteriorate performance when compared to a supervised alternative \cite{Cozman2006}. Since, in semi-supervised applications, the number of labeled objects may be small, it can be hard to determine whether any of these assumptions hold for a particular problem.
+
+Some have attempted to mitigate this problem by introducing safe versions of semi-supervised learning \cite{Li2011,Loog2013a}, which  guard against deterioration in performance. In this work we take a step toward an intrinsically safe type of semi-supervised learning. Given the choice of the quadratic loss as a surrogate loss function, we introduce a constrained set of parameter vectors induced by the unlabeled data, which does not rely on additional assumptions about this data. Using a projection of the supervised solution onto this constrained set, we derive a method that can be proven to never degrade the surrogate loss under consideration when compared to the supervised solution in the transductive setting. Experimental results indicate that it not only never degrades, but often improves performance. The transductive setting involves testing the performance of a procedure on the labeled and unlabeled training objects. Our experiments also indicate the results in the transductive setting transfers to the inductive setting where objects in the test set were not used as unlabeled objects during training.
+
+The rest of this work is structured as follows. The next section discusses related work. Section \ref{Projections} introduces our projection approach to semi-supervised learning. Sections 4 and 5, respectively show the theoretical performance guarantee and the evaluation on some benchmark datasets. We end with a discussion of the results and conclude.
+
+\section{Related Work}
+Classical work in semi-supervised learning treats it as a missing data problem, through the use of Expectation Maximization or the closely related self-learning \cite{McLachlan1975} approach. Self-learning is a simple wrapper method around any supervised procedure. Starting with a supervised learner trained only on the labeled object, we predict labels for the unlabeled objects. Using the known labels and the predicted labels for the unlabeled objects, we can retrain the supervised learner. This process is iterated until the predicted labels converge. Although simple, this procedure has had some practical success \cite{Nigam2000}.
+
+Modern semi-supervised methods involve either the assumption that the decision boundary is in a low-density region of the feature space, or that the data is concentrated on a low-dimensional manifold. A well known procedure using the first assumption is the Transductive SVM (TSVM) \cite{Joachims1999}. It can be interpreted as minimizing the following objective:
+\begin{multline}
+\label{eq:TSVM}
+\min_{\vec{w} \in \mathbb{R}^d,\vec{y}_\text{u} \in \{-1,+1\}^{N_u}} \sum_{i=1}^{N_l} \max(1-\vec{y}_i \vec{w}^\top \vec{x},0) + \lambda ||\vec{w}||^2 \\ + \nu \sum_{i=1}^{N_u} \max(1-\vec{y}_\text{u}^{(i)} \vec{w}^\top \vec{x},0)
+\end{multline}
+This leads to a hard to optimize, non-convex, problem, due to the dependence on the labels of the unlabeled objects $\vec{y}_\text{u}$. Others, such as \cite{Sindhwani2006}, have proposed procedures to efficiently find a good local minimum of this function. Similar low-density ideas have been proposed for other classifiers, such as entropy regularization for logistic regression \cite{Grandvalet2005} and a method for gaussian processes \cite{Lawrence2004}. The problem with such procedures is the additional parameter $\nu$ that is introduced to control the effect of the unlabeled objects. This is both a computational problem, since minimizing \eqref{eq:TSVM} is already hard for a single choice of $\nu$, as well as a performance problem. If the parameter is incorrectly set using, for example, cross-validation on an already limited set of labeled examples, the procedure may actually reduce performance as compared to a regular SVM which disregards the unlabeled data. It is this behavior that our procedure avoids. While it may be outperformed by the TSVM if the low-density assumption holds, robustness against deterioration would still constitute an important property in the cases when we are not sure whether it holds.
+
+Another large class of semi-supervised algorithms are formed by manifold regularization methods \cite{Niyogi2013}. Although these have been successful in some applications, they require more domain knowledge to be effectively applied on a particular classification problem.
+
+An attempt at safety in semi-supervised learning was introduced in \cite{Li2011}, who propose a safe variant for semi-supervised support vector machines. By constructing a set of possible decision boundaries using the unlabeled and labeled data, the decision boundary is chosen that is least likely to degrade performance. The goal of our work is also similar to that of \cite{Loog2013a}, who introduce a semi-supervised version of linear discriminant analysis, which is closely related to the least squares classifier considered here. There, explicit constraints are proposed that take into account the unlabeled data. In our work, these constraints need not be explicitly derived, but follow  directly from the choice of loss function and the data. While the impetus for these works is similar to ours, no strong performance guarantees have been derived for these methods. 
+
+\section{Projection method}
+\label{Projections}
+We consider classification using a quadratic surrogate loss \cite{Hastie2001}. In the supervised setting, the following objective is minimized:
+\begin{equation}
+\label{eq:supervisedloss}
+L(\vec{w},\vec{X},\vec{y}) = \lVert \vec{X} \vec{w} - \vec{y} \rVert^2
+\end{equation}
+The supervised solution $\vec{w}_{\text{sup}}$ is given by the minimization of \eqref{eq:supervisedloss}. The well known closed form solution to this problem is given by
+\begin{equation}
+\label{eq:supervisedsolution}
+\vec{w}_{\text{sup}} = (\vec{X}^\top \vec{X})^{-1} \vec{X}^\top \vec{y}
+\end{equation}
+If the true labels corresponding to the unlabeled objects, $\vec{y}_\text{u}^{\ast}$, would be given, we could incorporate these extending the vector of labels ${\vec{y}_\text{e}^\ast}^\top = \left[ \vec{y}^\top {\vec{y}_\text{u}^\ast}^\top \right]^\top$ as well as the design matrix $\vec{X}_\text{e}^\top = \left[ \vec{X}^\top \vec{X}_\text{u}^\top \right]$ and minimize of $L(\vec{w},\Xe, \vec{y}_\text{e}^\ast)$ over the labeled as well as the unlabeled objects. We will refer to this oracle solution as: $\vec{w}_\text{oracle}$. 
+
+The motivation behind the projection method is to form a constrained set of parameter vectors $\vec{w}$, informed by the unlabeled objects, that includes $\vec{w}_\text{oracle}$. We will then find the closest projection of $\vec{w}_{\text{sup}}$ onto this set, using an appropriate distance measure. This new estimate $\vec{w}_{\text{semi}}$, will then be closer to the oracle solution than $\vec{w}_{\text{sup}}$. 
+
+To form the constrained set, consider all possible labels for the unlabeled objects $\vec{y}_\text{u} \in [-1,1]^{N_u}$. This includes fractional labelings, where an objects is partly assigned to class $-1$ and partly to class $+1$. For instance, $0$ indicates the object is exactly equally assigned to both classes. For a particular labeling $\vec{y}_\text{e}^\top = \left[ \vec{y}^\top \vec{y}_\text{u}^\top \right]^\top$, we can find the corresponding parameter vector by minimizing $L(\vec{w},\vec{X}_\text{e},\vec{y}_\text{e})$.
+This objective remains the same as \eqref{eq:supervisedloss} except that fractional labels are now also included. Minimizing the objective for all possible labelings generates the following set of solutions:
+\begin{equation}
+\label{eq:constrainedregion}
+\Theta=\left\{ \G \XeT \ye \mid \vec{y}_\text{u} \in [-1,1]^{N_u} \right\}
+\end{equation}
+Note that this set, by construction, will also contain the solution $\vec{w}_\text{oracle}$, corresponding to the true but unknown labeling $\vec{y}_\text{e}^{\ast}$. Assuming that $\vec{w}_\text{oracle}$ is a better solution than $\vec{w}_\text{sup}$, we would like to find a solution more similar to $\vec{w}_\text{oracle}$. This can be accomplished by projecting $\vec{w}_\text{sup}$ onto $\Theta$. In remains to establish how to calculate the distance between $\vec{w}_\text{sup}$ and any other $\vec{w}$ in the space. For reasons which will use the following metric:
+\begin{equation}
+\label{eq:metric}
+d(\vec{w},\vec{w}\prime)=\sqrt{\left( \vec{w}-\vec{w}\prime \right)^\top \vec{X}_{\circ}^\top \vec{X}_{\circ}  \left( \vec{w}-\vec{w}\prime \right)}
+\end{equation}
+where we assume $\vec{X}_{\circ}^\top \vec{X}_{\circ}$ is a positive definite matrix. The projected estimator can now be found by minimizing this distance between the supervised solution and solutions in the constrained set:
+\begin{equation}
+\label{eq:projection}
+\vec{w}_\mathrm{semi} = \min_{\vec{w} \in \Theta} d(\vec{w},\vec{w}_\text{sup})
+\end{equation}
+If we take $\vec{X}_{\circ}=\vec{X}$, one can show this minimization is equal to minimizing $L(\vec{w},\vec{X},\vec{y})$, the loss on only the labeled objects under the constraints given by \eqref{eq:constrainedregion}. Setting $\vec{X}_\circ=\Xe$ measures the distances using both the labeled and unlabeled data. The latter choice has nice theoretical properties that we will consider in the next section.
+
+By plugging in the closed form solution of $\vec{w}_\text{sup}$ and $\vec{w}$ for a given $\vec{y}_\text{u}$, this problem can be written as a convex minimization problem in terms of $\vec{y}_\text{u}$, the unknown, fractional labels of the unlabeled data. We are left with a quadratic programming problem, which can be solved using a simple gradient descent procedure that takes into account the constraint that the labels are within $[-1,1]$.
+
+\section{Theoretical Analysis}
+\label{TheoreticalResults}
+
+% \subsection{Robustness}
+We will show that using the projection method introduced in the previous section will never increase the surrogate loss, measured on both labeled and unlabeled objects once the labels for all the objects are revealed:
+\begin{theorem}
+\label{th:robustness}
+Given $\vec{X}$, $\vec{X}_\mathrm{u}$ and $\vec{y}$, $\Xe^\top \Xe$ positive definite and $\vec{w}_\mathrm{sup}$ given by \eqref{eq:supervisedsolution}. For the projected estimator $\vec{w}_\mathrm{semi}$ proposed in \eqref{eq:projection}, the following result holds:
+$L(\vec{w}_\mathrm{semi},\Xe,\vec{y}_\mathrm{e}^{\ast}) \leq L(\vec{w}_\mathrm{sup},\Xe,\vec{y}_\mathrm{e}^{\ast}) $
+\end{theorem}
+In other words: $\vec{w}_\text{semi}$ will \emph{always} be at least as good or better than $\vec{w}_\text{sup}$, in terms of the quadratic surrogate loss, in the transductive setting.
+
+The proof of this result follows from a simple geometric interpretation of our procedure. Consider the following inner product, used in equation \eqref{eq:metric}:
+\begin{equation}
+\left\langle \vec{a}, \vec{b} \right\rangle = \vec{a}^\top \vec{X}_\text{e}^\top \vec{X}_\text{e} \vec{b}
+\end{equation}
+Let $\mathcal{H}_{\vec{X}_\text{e}} = ( \mathbb{R}^d,\left\langle ., . \right\rangle )$ be the inner product space corresponding with this inner product. Due to the similarity of the induced metric to a type of weighted Euclidean distance, this is clearly a Hilbert space, as long as $\XeT \Xe$ is positive definite. Next, note that the constrained space $\Theta$ is convex. More precisely, because, for any $k \in [0,1]$ and $\vec{w}_\text{1},\vec{w}_\text{2} \in \Theta$ we have that
+\begin{align}
+(1-k) \vec{w}_\text{1} + k \vec{w}_\text{2} & = \nonumber \\
+(1-k) \G \XeT \left[\vec{y}^\top \vec{y}_\text{1}^\top \right] + & \nonumber \\ 
+ k \G \XeT \left[\vec{y}^\top \vec{y}_\text{2}^\top \right] & = \nonumber \\ 
+\G \XeT \left[\vec{y}^\top ~~ k \vec{y}_\text{1}^\top + (1-k) \vec{y}_\text{2}^\top \right] & \in \Theta \nonumber
+\end{align}
+
+where this last line holds because $k \vec{y}_\text{1}^\top + (1-k) \vec{y}_\text{2}^\top \in [-1,1]^{N_u}$. So the constrained space is convex. 
+
+By construction $\vec{w}_\text{semi}$ is the closest projection of $\vec{w}_\text{sup}$ onto this convex constrained set $\Theta$ in $\mathcal{H}_{\vec{X}_\text{e}}$. By the Hilbert space projection theorem (consult, for instance \cite{Aubin2000}, proposition 1.4.1), we now have that 
+\begin{equation}
+\label{eq:projectiontheorem}
+d(\vec{w}_\text{semi},\vec{w}) \leq d(\vec{w}_\text{sup},\vec{w})
+\end{equation}
+for any $\vec{w} \in \Theta$. In particular consider $\vec{w}=\vec{w}_\text{oracle}$, which by construction is within $\Theta$. That is, all possible labelings correspond to an element in $\Theta$, so this also holds for the true labeling $\vec{y}_\text{u}^\ast$. Plugging in the closed form solution of $\vec{w}_\text{oracle}$ into \eqref{eq:projectiontheorem} and after some manipulations we find:
+\begin{equation}
+d(\vec{w}_\text{semi},\vec{w}_\text{oracle})^2=L(\vec{w}_\text{semi},\Xe,\vec{y}_\text{e}^{\ast})+C \\ \nonumber
+\end{equation}
+and
+\begin{equation}
+d(\vec{w}_\text{sup},\vec{w}_\text{oracle})^2=L(\vec{w}_\text{sup},\Xe,\vec{y}_\text{e}^{\ast})+C \nonumber
+\end{equation} 
+where $C$ is a constant that is equal for both cases. From this the result in Theorem \ref{th:robustness} follows directly.
+% To check that this is a Hilbert space, we need to see whether a absolutely converging sequence converges to an element in this space?
+
+Since the inequality in this result is not a strict inequality, it is important to get an idea when we can expect improvement of the semi-supervised learner, rather than just equality of the losses. Consider a single unlabeled object. Improvement happens whenever $\vec{w}_\text{sup} \neq \vec{w}_\text{semi}$, which occurs if $\vec{w}_\text{sup} \notin \Theta$.  For this to occur it needs to be impossible to a assign labels $\text{y}_\text{u}$ such that we can retrieve the $\vec{w}_\text{sup}$ by minimizing $L(\vec{w},\vec{X}_\text{e},\vec{y}_\text{e})$. This in turn occurs when there is no $\text{y}_\text{u} \in [-1,1]$ for which the gradient
+
+\begin{equation}
+\nabla \lVert \vec{X}_\text{e} \vec{w} - \vec{y}_\text{e} \rVert^2\bigg|_{\vec{w}=\vec{w}_\text{sup}}=\vec{0}.
+\end{equation}
+
+This happens only if $\vec{x}_\text{u}^\top \vec{w}_\text{sup} > 1$ or $\vec{x}_\text{u}^\top \vec{w}_\text{sup} < -1$. In other words, if observations $\vec{x}_\text{u}$ are possible with values that are sufficiently large (or small) and $\vec{w}_\text{sup}$ is not small enough to mitigate this, an update will occur. For many datasets, we might expect this to be true for at least one observation in a large set of unlabeled objects, especially if the supervised solution is not sufficiently regularized.
+
+% \subsection{Expected improvement}
+% Improvement if $\vec{w}_\text{sup} \notin \Theta$
+
+\section{Experimental Analysis}
+For our experiment, we consider $23$ classification datasets. $6$ of these are the semi-supervised learning benchmark datasets proposed by \cite{Chapelle2006}, while the other $16$ were retrieved from the UCI Machine Learning repository \cite{Bache2013}. All of the datasets are binary classification problems, or were turned into classification problems by merging several similar classes. As a preprocessing step, missing values were imputed and a dimensionality reduction using PCA was applied to obtain a design matrix that is full rank. This is necessarily to have a high probability that the matrix $\vec{X}_\text{e}^\top \vec{X}_\text{e}$ is positive definite, which was a requirement of Theorem \ref{th:robustness}. For the SVM and TSVM implementations we made use of the SVMlin software \cite{Sindhwani2006}.
+
+\subsection{Robustness}
+To illustrate Theorem \ref{th:robustness} experimentally, as well as study the behavior of the proposed procedure on unseen test data, we set up the following experiment. For the the $16$ UCI datasets, we randomly select $d+5$ labeled objects, where $d$ is the dimensionality of the dataset. We then randomly select $128$ objects as the labeled objects. While this number may seem small, it is useful to illustrate whether even for these small numbers of unlabeled data, the procedure works. The remaining objects are used as the test set. This procedure is repeated $10$ times and the differences $L(\vec{w}_\text{semi},\Xe,\vec{y}_\text{e}^{\ast}) - L(\vec{w}_\text{sup},\Xe,\vec{y}_\text{e}^{\ast}) $, the object of Theorem \ref{th:robustness}, is shown in Figure \ref{fig:lossdifference}.
+
+The results show that for none of the samplings of labeled and unlabeled objects is the loss of the supervised solution better than the loss of the projected estimator. This is interesting, because in practice one deals with a single dataset, not the average over a lot of datasets. Compare this to the behavior of the self-learner. While on average, the performance seems very similar, on a particular sample from a datasets, self-learning may lead to a higher quadratic loss than the supervised solution. We see a similar negative effect for the difference in hinge loss between the SVM and the TSVM. While better parameter choices may improve the number of experiments with a positive difference, the point of this experiment is to illustrate that while semi-supervised methods may improve performance on average, for a particular sample from a dataset there is no guarantee like Theorem \ref{th:robustness} for the projected estimator.
+
+When looking at the plot of the difference in loss on the test set (not shown), we find a similar result to Figure \ref{fig:lossdifference}. As the number of unlabeled objects grows, we would expect this to happen as the set of unlabeled objects and test objects become more similar. For these datasets $128$ seem to be enough to for the robustness to show on the test set as well.
+
+\begin{figure*}
+\centering
+\includegraphics[scale=0.55]{Figure1.pdf}
+\caption{Difference in terms of average surrogate loss between the supervised and unsupervised solution measured on the labeled and unlabeled instances. Positive values indicate that the semi-supervised method gives a lower surrogate loss than its supervised counterpart. For both the projection estimator and self-learning this supervised counterpart is the least squares classifier and loss is in terms of quadratic loss. For the TSVM, the loss considered is hinge loss and the supervised counterpart is the SVM with the same cost parameter. Note that the figure is zoomed in on the area of interest around a loss difference of $0$ and there are observations that are outside of the figure. For the projection method considered here, the supervised solution never has lower loss than the semi-supervised solution, as was proven in Theorem \ref{th:robustness}. While the other methods may perform as well or better on average, they do not have a similar guarantee for a single sample from a dataset.}
+\label{fig:lossdifference}
+\end{figure*}
+
+\subsection{Learning Curves}
+To illustrate the behavior of the procedure with increasing amounts of unlabeled data and to further explore the relationship between the quadratic surrogate loss and classification accuracy we generate learning curves in the following manner. For each of three illustrative datasets (Ionosphere, Pima, BMI), we randomly sample $d+5$ objects as labeled objects and $1024$ as unlabeled object. The remaining objects are used as a test set. For increasing subsets of the unlabeled data $2,4,8,\dots,1024$ we train the supervised and semi-supervised learners and evaluate their performance on the test objects, in terms of classification accuracy as well as in terms of quadratic loss. This resampling is repeated $1000$ times and averages and standard errors are reported in Figure \ref{fig:learningcurves}.
+
+From the figure it is clear that in these cases, the projected estimator is more robust to deterioration in performance on the test set than self-learning. This is not just true in terms of the surrogate loss, but in terms of the classification accuracy as well. This is especially apparent in the Pima dataset. There Self-learning error increases for larger amounts of unlabeled data, even though the projection estimator does not show an increase in error over the supervised learner. This dataset also illustrates that a decrease in the surrogate loss does not necessarily translate into a lower classification error. Additionally, on both the Ionosphere dataset as well as the BCI dataset, while the projection method has a lower quadratic loss than self-learning, the opposite is true when it comes to classification error.
+
+\begin{figure*}
+\centering
+\includegraphics[scale=0.70]{Figure2.pdf}
+\caption{Learning curves in terms of classification errors and quadratic loss on the test set for increasing numbers of \emph{unlabeled} data. LS indicates the least squares classifier trained on only the labeled objects while LSoracle indicates the performance of the least squares classifier when all labels of the unlabeled objects are available. Projection is the approach described in Section \ref{Projections}. Self-Learning acts as a basic semi-supervised comparison.}
+\label{fig:learningcurves}
+\end{figure*}
+
+\subsection{Performance}
+In a third experiment, we look at all $23$ datasets and apply a cross-validation procedure to compare the performance in terms of the classification error of several combinations of supervised and semi-supervised classifiers. The cross-validation experiments were set up as follows. For each dataset, the objects were split into 10-folds. Subsequently leaving out each fold, we combine the other 9 folds and randomly select $d+5$ labeled objects while the rest is used as unlabeled objects. We end up with a single prediction for each object, for which we evaluate the misclassification error. This procedure is repeated $10$ times and the averages are reported in Table 1.
+
+The results indicate that in terms of the classification error, supervised SVM performs much better in many cases than the unregularized least squares classifier. Comparing the improvements offered by the TSVM, when compared to the improvements offered by the projected estimator, the latter seems more robust, at the price of showing more modest improvements over the supervised alternative. The self-learning least squares approach has similar behavior to the TSVM, where its improvements over the supervised alternative are larger than the projected estimator, at the expense of reducing performance on some datasets.
+
+\begin{table*}[t]
+\center
+\normalsize
+\begin{tabular}{|l|lll|ll|}
+\hline
+Dataset & LS & SL & Projection & SVM & TSVM \\ 
+\hline
+Haberman & $0.28 \pm 0.02$& $0.28 \pm 0.02$& $0.28 \pm 0.02$& $0.29 \pm 0.02$& $\mathbf{0.31 \pm 0.03} $\\ 
+Ionosphere & $0.28 \pm 0.02$& $\mathbf{0.24 \pm 0.02} $& $\mathbf{0.23 \pm 0.03} $& $0.19 \pm 0.01$& $\mathbf{0.21 \pm 0.03} $\\ 
+Parkinsons & $0.28 \pm 0.02$& $0.27 \pm 0.03$& $0.27 \pm 0.02$& $0.17 \pm 0.01$& $\mathbf{0.22 \pm 0.02} $\\ 
+Pima & $0.32 \pm 0.02$& $\mathbf{0.35 \pm 0.01} $& $0.31 \pm 0.02$& $0.33 \pm 0.02$& $0.32 \pm 0.02$\\ 
+Sonar & $0.40 \pm 0.04$& $\mathbf{0.35 \pm 0.03} $& $\mathbf{0.36 \pm 0.04} $& $0.26 \pm 0.01$& $\mathbf{0.39 \pm 0.02} $\\ 
+SPECT & $0.40 \pm 0.03$& $0.38 \pm 0.03$& $0.39 \pm 0.02$& $0.24 \pm 0.02$& $\mathbf{0.20 \pm 0.02} $\\ 
+SPECTF & $0.42 \pm 0.04$& $0.40 \pm 0.04$& $0.41 \pm 0.03$& $0.48 \pm 0.03$& $0.46 \pm 0.05$\\ 
+Transfusion & $0.27 \pm 0.02$& $0.27 \pm 0.02$& $0.27 \pm 0.02$& $0.27 \pm 0.02$& $\mathbf{0.33 \pm 0.02} $\\ 
+WDBC & $0.10 \pm 0.01$& $\mathbf{0.12 \pm 0.02} $& $0.10 \pm 0.01$& $0.08 \pm 0.01$& $0.07 \pm 0.01$\\ 
+Mammographic & $0.30 \pm 0.02$& $0.29 \pm 0.02$& $0.30 \pm 0.02$& $0.27 \pm 0.01$& $\mathbf{0.30 \pm 0.02} $\\ 
+Spambase & $0.22 \pm 0.02$& $\mathbf{0.28 \pm 0.02} $& $0.22 \pm 0.02$& $0.15 \pm 0.01$& $\mathbf{0.19 \pm 0.01} $\\ 
+Thoraric & $0.27 \pm 0.03$& $\mathbf{0.23 \pm 0.03} $& $0.26 \pm 0.03$& $0.23 \pm 0.02$& $0.22 \pm 0.02$\\ 
+POP failures & $0.24 \pm 0.04$& $\mathbf{0.16 \pm 0.04} $& $0.23 \pm 0.04$& $0.14 \pm 0.02$& $\mathbf{0.18 \pm 0.01} $\\ 
+EEG eye & $0.46 \pm 0.01$& $\mathbf{0.48 \pm 0.01} $& $0.46 \pm 0.01$& $0.45 \pm 0.01$& $0.45 \pm 0.01$\\ 
+CMC & $0.42 \pm 0.02$& $\mathbf{0.45 \pm 0.02} $& $0.42 \pm 0.02$& $0.40 \pm 0.02$& $0.40 \pm 0.02$\\ 
+Banknote & $0.04 \pm 0.00$& $0.04 \pm 0.00$& $0.04 \pm 0.00$& $0.04 \pm 0.01$& $0.04 \pm 0.01$\\ 
+Fertility & $0.21 \pm 0.03$& $\mathbf{0.18 \pm 0.03} $& $0.20 \pm 0.03$& $0.16 \pm 0.03$& $\mathbf{0.14 \pm 0.01} $\\ 
+Digit1 & $0.41 \pm 0.02$& $\mathbf{0.33 \pm 0.01} $& $\mathbf{0.37 \pm 0.02} $& $0.05 \pm 0.00$& $\mathbf{0.08 \pm 0.00} $\\ 
+USPS & $0.42 \pm 0.02$& $\mathbf{0.34 \pm 0.02} $& $\mathbf{0.38 \pm 0.02} $& $0.11 \pm 0.00$& $\mathbf{0.13 \pm 0.00} $\\ 
+COIL2 & $0.38 \pm 0.01$& $\mathbf{0.25 \pm 0.01} $& $\mathbf{0.34 \pm 0.01} $& $0.15 \pm 0.01$& $0.15 \pm 0.01$\\ 
+BCI & $0.41 \pm 0.03$& $\mathbf{0.36 \pm 0.01} $& $\mathbf{0.36 \pm 0.02} $& $0.28 \pm 0.03$& $\mathbf{0.35 \pm 0.02} $\\ 
+g241c & $0.44 \pm 0.02$& $\mathbf{0.39 \pm 0.02} $& $\mathbf{0.41 \pm 0.02} $& $0.23 \pm 0.01$& $\mathbf{0.18 \pm 0.01} $\\ 
+g241n & $0.44 \pm 0.01$& $\mathbf{0.38 \pm 0.01} $& $\mathbf{0.41 \pm 0.01} $& $0.23 \pm 0.01$& $\mathbf{0.18 \pm 0.01} $\\
+\hline
+\hline
+Win/Draw/Loss & & 11 / 7 / 5 & 8 / 15 / 0 & & 4 / 8 / 11\\ 
+\hline
+\end{tabular}
+
+\caption{10-fold 10 repeat Cross-validation results for 23 datasets for the supervised least squares classifier (LS), the projected least squares classifier (Projected), the self-learned least squares classifier (SL), Support Vector Classifier (SVM) and the Transductive SVM (TSVM). Bold values indicate whether the performance of a semi-supervised solution is significantly different from the supervised alternative as evaluated by a two-sided paired t-test. The Win/Draw/Loss indicates on how many datasets a semi-supervised learner performs respectively better, equal or worse than the supervised alternative.}
+\end{table*}
+
+\section{Discussion}
+The main result of this work was presented in Theorem \ref{th:robustness} and illustrated in the first experiment. The results from this experiment also indicate that on average the projected estimator has similarities to  self-learning, while on individual samples from the datasets, the projected estimator never reduces performance in terms of the surrogate loss. This is an important property since, in some practical setting, one only has a single sample from a problem, and it is important to know that performance will not be worse when applying a semi-supervised version of a supervised procedure. Even if we do not have enough labeled objects to accurately estimate this performance, Theorem \ref{th:robustness} guarantees we will not perform worse than supervised learning in the transductive setting. Therefore, while Theorem \ref{th:robustness} has its limitations, we consider it an important property for semi-supervised classifiers.
+
+The analysis assumes positive definiteness of the projection matrix $\vec{X}_\text{e}^\top \vec{X}_\text{e}$. When this is not the case, the proof no longer straightforwardly holds. In these cases, however, $\vec{X}^\top \vec{X}$ will also not be of full rank, so the supervised solution is affected by this problem as well. The solution in the supervised case is to add a regularization term to the objective function. The problem in the projection procedure is how to apply this regularization while retaining the result in Theorem \ref{th:robustness}. A principled approach to this remains as an open problem.
+
+It is possible that the quantitative results for the transductive support vector classifiers would have been different in these experiments, had we been more careful in the parameter settings of the SVM and TSVM. There are two reasons why this is difficult to achieve, both in our experiments, as well as in practice. The first reason is a computational one. While progress has been made in speeding up TSVM procedures, doing a grid search over the $2$ parameters using cross-validation is time-consuming. Secondly, if labeled data is limited it is hard to accurately estimate the performance of any of the parameter settings. Selecting the best one may be impossible. Furthermore, the goal in our experiments was to study how the supervised variant relates to the semi-supervised variant, not their absolute performance. Regardless, the SVM performance in terms of classification accuracy seems to be superior to the unregularized least squares procedure studied in this work. Whereas it is difficult to correctly set the parameter for the TSVM, for the projected estimator, no such parameter is necessary. In fact, the constrained space acts as a data dependent regularizer of the unregularized supervised least squares solution. The amount of regularization is therefore set determined by the unlabeled data, instead of the user.
+
+The TSVM in principle only needs 2 parameter settings, as discussed before. Implementations, however, usually rely on many more, given the algorithms used to find a good global minimum for the non-convex problem in Equation \eqref{eq:TSVM}. The SVMlin implementation used here, for instance, requires the user to specify the class prior probability of the unlabeled objects. This may be hard to estimate using limited labeled data. The projected estimator, on the other hand, results in a  QP formulation in terms of the unlabeled objects which has a global optimum (which is unique in terms of $\vec{w}$). This can be solved using a simple gradient descent procedure. 
+
+One limitation of Theorem \ref{th:robustness} is that it is a result in terms of the quadratic loss. While experiment 2 and 3 indicate that the robustness property also often occurs in terms of classification error, one could question whether the quadratic loss is a good choice as surrogate loss. Its symmetry makes it very different from $\{0,1\}$-loss. On the other hand, the estimation error may be smaller than other loss functions in the small sample setting. \cite{Ben-David2012} make the case that for linear function classes, this may not off-set the inherent large deviation from $\{0,1\}$-loss. Apart from the fact that this result is derived in a worst case analysis, there are several other reasons why quadratic loss is still interesting and important to consider. Firstly, it performs very well in practice and is often on par or better than, for instance, SVMs employing hinge loss \cite{Rasmussen2005,Hastie2001,Poggio2003}. Moreover, while we considered the classification setting here, the quadratic loss relates closely to least squares regression. While in regression, the constrained region $\Theta$ does not follow directly from the data alone, there may be other ways to construct these regions. For instance, if the outputs of the regression are bounded we have a similar setting to the $[-1,1]$ bounds used in our classification setting.
+
+This begs the question, however, whether we can apply the same procedure for other loss functions. Apart from the question how to define the metric in these cases, some other loss function do not constrain the parameter space in any useful way. For instance, in the case of hinge loss, or logistic loss, one can show that the constrained space $\Theta$ always includes $\vec{w}_\text{sup}$. For these cases, additional constraints may be required to get anything out of the projection method. Many other interesting loss functions do lead to a constrained space that does not include the supervised solution. In particular, many likelihood based classifiers may be amenable to this procedure.
+
+In the empirical risk minimization framework, classifiers are found by minimizing surrogate losses. Here, we are able to show that this particular semi-supervised learning is effective at this objective. In this sense, it can  perhaps be considered a proper semi-supervised version of the supervised quadratic loss minimizer. Whether and when this increase in performance in terms of the surrogate loss translates into improved classification accuracy is unclear. Much work is currently being done to understand the relationship between these surrogate losses and the ultimate object of many classification problems: $\{0,1\}$-loss \cite{Bartlett2006,Ben-David2012}. 
+
+\section{Conclusion}
+We introduced and analyzed an approach to semi-supervised learning with quadratic surrogate loss that has the interesting theoretical property of never degrading performance in the transductive setting in terms of this surrogate loss. This was achieved by projecting the supervised solution least squares classifier onto a constrained set of solutions defined by the unlabeled data. As we have illustrated through simulation experiments, the safe improvements in terms of the surrogate loss also partially translates into safe improvements in terms of the classification errors. Moreover, the procedure can be formulated as a standard quadratic programming problem, leading to a simple optimization procedure. An open problem is how to apply this procedure or a procedure with similar theoretical performance guarantees, to other loss functions.
+
+\bibliography{library}
+\bibliographystyle{icml2014}
+
+\end{document} 
