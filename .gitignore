@@ -5,3 +5,8 @@
 *.Rproj
 Rprof.out
 .Rproj.user
+*.bbl
+*.log
+*-concordance.tex
+*.synctex.gz
+Correspondence/
